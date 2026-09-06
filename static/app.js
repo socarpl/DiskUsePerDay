@@ -31,6 +31,40 @@ const state = {
   filesMeta: { total: 0, total_pages: 1 },
 };
 
+// ---------- Appearance settings ----------
+
+const settingsDialog = document.getElementById("settingsDialog");
+const themeSelect = document.getElementById("themeSelect");
+themeSelect.value = window.appTheme.preference;
+document.getElementById("settingsBtn").addEventListener("click", () => settingsDialog.showModal());
+themeSelect.addEventListener("change", () => {
+  const saved = window.appTheme.set(themeSelect.value);
+  document.getElementById("themeSaveError").classList.toggle("hidden", saved);
+});
+
+function chartColors() {
+  const styles = getComputedStyle(document.documentElement);
+  const color = (name) => styles.getPropertyValue(name).trim();
+  return {
+    text: color("--text"), muted: color("--text-muted"),
+    accent: color("--accent"), hover: color("--accent-2"), grid: color("--grid"),
+  };
+}
+
+window.addEventListener("themechange", () => {
+  themeSelect.value = window.appTheme.preference;
+  if (!state.chart) return;
+  const colors = chartColors();
+  state.chart.data.datasets[0].backgroundColor = colors.accent;
+  state.chart.data.datasets[0].hoverBackgroundColor = colors.hover;
+  state.chart.options.plugins.title.color = colors.text;
+  for (const axis of Object.values(state.chart.options.scales)) {
+    axis.ticks.color = colors.muted;
+    axis.grid.color = colors.grid;
+  }
+  state.chart.update("none");
+});
+
 function formatBytes(bytes) {
   if (!bytes) return "0 B";
   const units = ["B", "KB", "MB", "GB", "TB"];
@@ -253,6 +287,7 @@ function renderCurrentLevel() {
 }
 
 function drawChart(labels, sizes, counts, title, onBarClick) {
+  const colors = chartColors();
   document.getElementById("emptyState").classList.add("hidden");
   const ctx = document.getElementById("mainChart").getContext("2d");
   if (state.chart) state.chart.destroy();
@@ -264,8 +299,8 @@ function drawChart(labels, sizes, counts, title, onBarClick) {
         {
           label: "Bytes created",
           data: sizes,
-          backgroundColor: "#5b8cff",
-          hoverBackgroundColor: "#35d0ba",
+          backgroundColor: colors.accent,
+          hoverBackgroundColor: colors.hover,
           borderRadius: 4,
           maxBarThickness: 46,
         },
@@ -279,7 +314,7 @@ function drawChart(labels, sizes, counts, title, onBarClick) {
       },
       plugins: {
         legend: { display: false },
-        title: { display: true, text: title, color: "#e7ecf7", font: { size: 15 } },
+        title: { display: true, text: title, color: colors.text, font: { size: 15 } },
         tooltip: {
           callbacks: {
             label: (item) => {
@@ -290,10 +325,10 @@ function drawChart(labels, sizes, counts, title, onBarClick) {
         },
       },
       scales: {
-        x: { ticks: { color: "#8d97b3" }, grid: { color: "rgba(42,53,86,0.4)" } },
+        x: { ticks: { color: colors.muted }, grid: { color: colors.grid } },
         y: {
-          ticks: { color: "#8d97b3", callback: (v) => formatBytes(v) },
-          grid: { color: "rgba(42,53,86,0.4)" },
+          ticks: { color: colors.muted, callback: (v) => formatBytes(v) },
+          grid: { color: colors.grid },
         },
       },
     },

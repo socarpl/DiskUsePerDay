@@ -4,6 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>DiskUsePerDay</title>
+<script src="theme.js"></script>
 <link rel="stylesheet" href="style.css" />
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
@@ -18,6 +19,7 @@
     <button id="scanBtn" class="btn btn-primary">Scan Folder…</button>
     <button id="rescanBtn" class="btn btn-secondary" title="Re-scan current folder">Rescan</button>
     <button id="deleteRootBtn" class="btn btn-danger" title="Forget this folder's data">Delete</button>
+    <button id="settingsBtn" class="btn btn-secondary" aria-haspopup="dialog">Settings</button>
   </div>
 </header>
 
@@ -37,6 +39,21 @@
     </div>
   </div>
 </div>
+
+<dialog id="settingsDialog" class="modal-card settings-dialog" aria-labelledby="settingsTitle">
+  <h2 id="settingsTitle">Settings</h2>
+  <label for="themeSelect">Appearance</label>
+  <select id="themeSelect" aria-describedby="themeHelp">
+    <option value="auto">Auto</option>
+    <option value="dark">Dark</option>
+    <option value="light">Light</option>
+  </select>
+  <p id="themeHelp" class="muted">Auto follows your system appearance. Changes apply immediately and are saved in this browser.</p>
+  <p id="themeSaveError" class="error hidden" role="status">Your browser could not save this preference. It will apply until you reload.</p>
+  <form method="dialog" class="modal-actions">
+    <button class="btn btn-primary">Done</button>
+  </form>
+</dialog>
 
 <main class="container">
   <section class="summary-cards" id="summaryCards"></section>
@@ -86,6 +103,11 @@
     </div>
   </section>
 </main>
+
+<footer class="site-footer">
+  <span>© <a href="https://socar.pl" target="_blank" rel="noopener noreferrer">SOCAR</a> 2026</span>
+  <a href="https://github.com/socarpl/DiskUsePerDay" target="_blank" rel="noopener noreferrer">Github</a>
+</footer>
 
 <ul id="fileContextMenu" class="context-menu hidden">
   <li id="ctxOpenFile">Open file</li>

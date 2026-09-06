@@ -15,6 +15,8 @@ drill down from **Year → Month → Day**, and list the actual files behind any
 - Scan progress is tracked in the background and persists across page reloads.
 - Multiple scanned folders are remembered; rescan or delete their data anytime.
 
+Use **Settings** in the top bar to choose **Auto**, **Dark**, or **Light** appearance. Auto (the default) follows the system preference reported by your browser, including changes while the app is open. Your choice is saved in this browser.
+
 ## Requirements
 
 - Python 3.9+
