@@ -1,0 +1,23 @@
+.venv/
+venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+
+# Scanned-data DB contains real file paths/sizes from the user's disk - never commit.
+diskuse.db
+diskuse.db-journal
+diskuse.db-wal
+diskuse.db-shm
+
+# Local secrets/config, never commit.
+.env
+.env.*
+*.local
+
+# Editor/OS clutter
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store

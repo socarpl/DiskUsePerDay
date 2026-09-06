@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>DiskUsePerDay</title>
+<link rel="stylesheet" href="style.css" />
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-icon">📊</span>
+    <span class="brand-title">DiskUsePerDay</span>
+  </div>
+  <div class="topbar-controls">
+    <select id="rootSelect" title="Scanned folders"></select>
+    <button id="scanBtn" class="btn btn-primary">Scan Folder…</button>
+    <button id="rescanBtn" class="btn btn-secondary" title="Re-scan current folder">Rescan</button>
+    <button id="deleteRootBtn" class="btn btn-danger" title="Forget this folder's data">Delete</button>
+  </div>
+</header>
+
+<div id="scanModal" class="modal hidden">
+  <div class="modal-card">
+    <h2>Scan a folder</h2>
+    <p class="muted">Enter a full path to a folder. All files underneath it will be analyzed by creation date and size.</p>
+    <input id="scanPathInput" type="text" placeholder="e.g. D:\Photos" />
+    <div id="scanProgress" class="scan-progress hidden">
+      <div class="spinner"></div>
+      <span id="scanProgressText">Scanning…</span>
+    </div>
+    <p id="scanError" class="error hidden"></p>
+    <div class="modal-actions">
+      <button id="scanCancelBtn" class="btn btn-secondary">Cancel</button>
+      <button id="scanStartBtn" class="btn btn-primary">Start Scan</button>
+    </div>
+  </div>
+</div>
+
+<main class="container">
+  <section class="summary-cards" id="summaryCards"></section>
+
+  <section class="breadcrumb-row">
+    <nav class="breadcrumb" id="breadcrumb"></nav>
+    <div class="view-actions" id="viewActions"></div>
+  </section>
+
+  <section class="year-jump-row">
+    <label for="yearJumpSelect">List files for year:</label>
+    <select id="yearJumpSelect">
+      <option value="">Select a year…</option>
+    </select>
+    <span class="muted">Largest files first, 100 per page</span>
+  </section>
+
+  <section class="chart-card">
+    <canvas id="mainChart" height="110"></canvas>
+    <p id="emptyState" class="empty-state hidden">No data yet — scan a folder to get started.</p>
+  </section>
+
+  <section id="filesSection" class="files-card hidden">
+    <div class="files-header">
+      <h3 id="filesTitle">Files</h3>
+      <input id="fileFilter" type="text" placeholder="Filter by name or path…" />
+    </div>
+    <div class="table-wrap">
+      <table id="filesTable">
+        <thead>
+          <tr>
+            <th data-sort="name">Name</th>
+            <th data-sort="path">Path</th>
+            <th data-sort="size">Size</th>
+            <th data-sort="created_at">Created</th>
+          </tr>
+        </thead>
+        <tbody id="filesTbody"></tbody>
+      </table>
+    </div>
+    <div class="pagination-row">
+      <span id="pageInfo" class="muted"></span>
+      <div class="pagination-buttons">
+        <button id="prevPageBtn" class="btn btn-secondary">‹ Prev</button>
+        <button id="nextPageBtn" class="btn btn-secondary">Next ›</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<ul id="fileContextMenu" class="context-menu hidden">
+  <li id="ctxOpenFile">Open file</li>
+  <li id="ctxOpenFolder">Open containing folder</li>
+</ul>
+
+<script src="app.js"></script>
+</body>
+</html>
