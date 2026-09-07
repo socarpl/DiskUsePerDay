@@ -31,6 +31,47 @@ const state = {
   filesMeta: { total: 0, total_pages: 1 },
 };
 
+// ---------- Persistent collapsible panels ----------
+
+function initCollapsiblePanel(buttonId, contentId, storageKey, label, onExpand) {
+  const button = document.getElementById(buttonId);
+  const content = document.getElementById(contentId);
+  let collapsed = false;
+  try {
+    collapsed = localStorage.getItem(storageKey) === "collapsed";
+  } catch (_) {
+    // Controls remain usable when browser storage is unavailable.
+  }
+  function apply() {
+    content.hidden = collapsed;
+    button.setAttribute("aria-expanded", String(!collapsed));
+    button.textContent = collapsed ? "\u2193" : "\u2191";
+    button.setAttribute("aria-label", (collapsed ? "Expand " : "Collapse ") + label);
+    button.title = (collapsed ? "Expand " : "Collapse ") + label;
+    if (!collapsed && onExpand) requestAnimationFrame(onExpand);
+  }
+  button.addEventListener("click", () => {
+    collapsed = !collapsed;
+    try {
+      localStorage.setItem(storageKey, collapsed ? "collapsed" : "expanded");
+    } catch (_) {
+      // Keep the current session usable even if persistence is blocked.
+    }
+    apply();
+  });
+  window.addEventListener("storage", (event) => {
+    if (event.key === storageKey || event.key === null) {
+      collapsed = event.newValue === "collapsed";
+      apply();
+    }
+  });
+  apply();
+}
+
+initCollapsiblePanel("chartToggle", "chartContent", "diskuse.panel.chart", "storage chart",
+  () => { if (state.chart) state.chart.resize(); });
+initCollapsiblePanel("yearsToggle", "yearsContent", "diskuse.panel.years", "yearly usage");
+
 // ---------- Appearance settings ----------
 
 const settingsDialog = document.getElementById("settingsDialog");
@@ -118,11 +159,14 @@ function resetDrilldown() {
   state.year = null;
   state.month = null;
   hideFiles();
+  renderYearUsage([]);
 }
 
 // ---------- Chart / drilldown ----------
 
 function renderEmpty() {
+  renderYearUsage([]);
+  hideFiles();
   document.getElementById("emptyState").classList.remove("hidden");
   document.getElementById("summaryCards").innerHTML = "";
   document.getElementById("breadcrumb").innerHTML = "";
@@ -215,9 +259,67 @@ function populateYearJump(years) {
   select.value = years.includes(current) ? current : "";
 }
 
+function formatYearUsage(bytes) {
+  const gb = 1024 ** 3;
+  const value = bytes / (bytes >= gb ? gb : 1024 ** 2);
+  if (bytes > 0 && value < 0.01) return "<" + (0.01).toLocaleString(undefined, { minimumFractionDigits: 2 }) + " MB";
+  return value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    + (bytes >= gb ? " GB" : " MB");
+}
+
+function renderYearUsage(rows) {
+  const section = document.getElementById("yearUsageSection");
+  const container = document.getElementById("yearUsageTables");
+  container.replaceChildren();
+  section.classList.toggle("hidden", rows.length === 0);
+  document.getElementById("yearUsageCount").textContent =
+    rows.length + (rows.length === 1 ? " year" : " years");
+  // Use at most five balanced groups; extra years go to the first groups.
+  const sorted = [...rows].sort((a, b) => Number(a.year) - Number(b.year));
+  const groupCount = Math.min(5, Math.ceil(sorted.length / 8));
+  const groupSize = groupCount ? Math.floor(sorted.length / groupCount) : 0;
+  const remainder = groupCount ? sorted.length % groupCount : 0;
+  let start = 0;
+  for (let index = 0; index < groupCount; index++) {
+    const size = groupSize + (index < remainder ? 1 : 0);
+    const group = sorted.slice(start, start + size);
+    start += size;
+    const table = document.createElement("table");
+    table.className = "year-usage-table";
+    const caption = table.createCaption();
+    caption.className = "sr-only";
+    caption.textContent = "Storage by creation year, " + group[0].year + " to " + group[group.length - 1].year;
+    const header = table.createTHead().insertRow();
+    for (const title of ["Year", "Usage"]) {
+      const th = document.createElement("th");
+      th.scope = "col";
+      th.textContent = title;
+      header.appendChild(th);
+    }
+    const body = table.createTBody();
+    for (const row of group) {
+      const tr = body.insertRow();
+      const year = document.createElement("th");
+      year.scope = "row";
+      const button = document.createElement("button");
+      button.className = "year-link";
+      button.textContent = row.year;
+      button.setAttribute("aria-label", "List files created in " + row.year);
+      button.addEventListener("click", () => showFiles(row.year, null, null));
+      year.appendChild(button);
+      tr.appendChild(year);
+      tr.insertCell().textContent = formatYearUsage(row.total_size);
+    }
+    container.appendChild(table);
+  }
+}
+
 async function loadYears() {
   document.getElementById("emptyState").classList.add("hidden");
-  const rows = await API.years(state.root);
+  const root = state.root;
+  const rows = await API.years(root);
+  if (root !== state.root) return;
+  renderYearUsage(rows);
   rows.forEach((r) => (r.__label = r.year));
   populateYearJump(rows.map((r) => r.year));
   if (rows.length === 0) {
@@ -301,7 +403,7 @@ function drawChart(labels, sizes, counts, title, onBarClick) {
           data: sizes,
           backgroundColor: colors.accent,
           hoverBackgroundColor: colors.hover,
-          borderRadius: 4,
+          borderRadius: 12,
           maxBarThickness: 46,
         },
       ],

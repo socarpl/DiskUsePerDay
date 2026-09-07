@@ -11,7 +11,7 @@
 <body>
 <header class="topbar">
   <div class="brand">
-    <span class="brand-icon">📊</span>
+    <span class="brand-icon" aria-hidden="true">📊</span>
     <span class="brand-title">DiskUsePerDay</span>
   </div>
   <div class="topbar-controls">
@@ -56,6 +56,11 @@
 </dialog>
 
 <main class="container">
+  <div class="page-heading">
+    <div><p class="eyebrow">YOUR STORAGE, OVER TIME</p><h1>A little perspective on your files.</h1>
+    <p class="muted">Explore the space your files take up, one year at a time.</p></div>
+    <span class="heading-badge">Local &amp; personal</span>
+  </div>
   <section class="summary-cards" id="summaryCards"></section>
 
   <section class="breadcrumb-row">
@@ -71,9 +76,29 @@
     <span class="muted">Largest files first, 100 per page</span>
   </section>
 
-  <section class="chart-card">
-    <canvas id="mainChart" height="110"></canvas>
+  <section class="chart-card" aria-labelledby="chartTitle">
+    <div class="section-heading">
+      <h2 id="chartTitle">Storage over time</h2>
+      <button id="chartToggle" class="btn btn-secondary panel-toggle" aria-expanded="true" aria-controls="chartContent" aria-label="Collapse storage chart" title="Collapse storage chart">&#8593;</button>
+    </div>
+    <div id="chartContent" class="panel-content">
+    <div class="chart-wrap"><canvas id="mainChart" height="110"></canvas></div>
     <p id="emptyState" class="empty-state hidden">No data yet — scan a folder to get started.</p>
+    </div>
+  </section>
+
+  <section id="yearUsageSection" class="year-usage-card hidden" aria-labelledby="yearUsageTitle">
+    <div class="section-heading">
+      <div><p class="eyebrow">THE BIG PICTURE</p><h2 id="yearUsageTitle">Every year, at a glance</h2></div>
+      <div class="panel-actions">
+        <span id="yearUsageCount" class="heading-badge"></span>
+        <button id="yearsToggle" class="btn btn-secondary panel-toggle" aria-expanded="true" aria-controls="yearsContent" aria-label="Collapse yearly usage" title="Collapse yearly usage">&#8593;</button>
+      </div>
+    </div>
+    <div id="yearsContent" class="panel-content">
+    <p class="muted">Current file sizes grouped by creation year. Select a year to explore its files.</p>
+    <div id="yearUsageTables" class="year-usage-grid"></div>
+    </div>
   </section>
 
   <section id="filesSection" class="files-card hidden">

@@ -17,6 +17,8 @@ drill down from **Year → Month → Day**, and list the actual files behind any
 
 Use **Settings** in the top bar to choose **Auto**, **Dark**, or **Light** appearance. Auto (the default) follows the system preference reported by your browser, including changes while the app is open. Your choice is saved in this browser.
 
+The interface uses rounded clay-style surfaces in both themes. Below the chart, a responsive yearly overview lists storage in MB or GB across balanced columns. Select any year to view its files. The chart and yearly overview can be collapsed independently; their states are saved in browser storage and restored after reloads or restarts.
+
 ## Requirements
 
 - Python 3.9+
