@@ -55,6 +55,27 @@
   </form>
 </dialog>
 
+<dialog id="exportDialog" class="modal-card settings-dialog" aria-labelledby="exportTitle">
+  <h2 id="exportTitle">Export HTML report</h2>
+  <p id="exportScope" class="muted"></p>
+  <p class="muted">Includes all matching files across all pages.</p>
+  <label for="exportOrder">Organize files by</label>
+  <select id="exportOrder" aria-describedby="exportHelp">
+    <option value="size_desc">Size - largest first</option>
+    <option value="size_asc">Size - smallest first</option>
+    <option value="date_asc">Created date - oldest first</option>
+    <option value="date_desc">Created date - newest first</option>
+    <option value="tree">Directory tree - alphabetical</option>
+  </select>
+  <p id="exportHelp" class="muted">Directory tree groups paths by folders and subfolders alphabetically. The report opens offline in any browser.</p>
+  <p id="exportError" class="error hidden" role="alert"></p>
+  <p id="exportStatus" class="muted" role="status"></p>
+  <div class="modal-actions">
+    <button id="exportCancelBtn" class="btn btn-secondary">Cancel</button>
+    <button id="exportDownloadBtn" class="btn btn-primary">Download HTML</button>
+  </div>
+</dialog>
+
 <main class="container">
   <div class="page-heading">
     <div><p class="eyebrow">YOUR STORAGE, OVER TIME</p><h1>A little perspective on your files.</h1>
@@ -70,9 +91,13 @@
 
   <section class="year-jump-row">
     <label for="yearJumpSelect">List files for year:</label>
+    <div class="year-navigation">
+      <button id="prevYearBtn" class="btn btn-secondary year-step" aria-label="Previous available year" title="Previous available year" disabled>&#8592;</button>
     <select id="yearJumpSelect">
       <option value="">Select a year…</option>
     </select>
+      <button id="nextYearBtn" class="btn btn-secondary year-step" aria-label="Next available year" title="Next available year" disabled>&#8594;</button>
+    </div>
     <span class="muted">Largest files first, 100 per page</span>
   </section>
 
@@ -104,7 +129,10 @@
   <section id="filesSection" class="files-card hidden">
     <div class="files-header">
       <h3 id="filesTitle">Files</h3>
-      <input id="fileFilter" type="text" placeholder="Filter by name or path…" />
+      <div class="file-actions">
+        <input id="fileFilter" type="text" placeholder="Filter by name or path…" />
+        <button id="exportBtn" class="btn btn-secondary" aria-haspopup="dialog">Export HTML</button>
+      </div>
     </div>
     <div class="table-wrap">
       <table id="filesTable">

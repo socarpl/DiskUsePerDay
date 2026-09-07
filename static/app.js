@@ -257,6 +257,23 @@ function populateYearJump(years) {
     select.appendChild(opt);
   });
   select.value = years.includes(current) ? current : "";
+  updateYearNavigation();
+}
+
+function updateYearNavigation() {
+  const select = document.getElementById("yearJumpSelect");
+  const index = select.selectedIndex;
+  document.getElementById("prevYearBtn").disabled = index <= 1;
+  document.getElementById("nextYearBtn").disabled =
+    index < 1 || index >= select.options.length - 1;
+}
+
+function stepYear(direction) {
+  const select = document.getElementById("yearJumpSelect");
+  const index = select.selectedIndex + direction;
+  if (select.selectedIndex < 1 || index < 1 || index >= select.options.length) return;
+  select.selectedIndex = index;
+  showFiles(select.value, null, null);
 }
 
 function formatYearUsage(bytes) {
@@ -441,6 +458,8 @@ function drawChart(labels, sizes, counts, title, onBarClick) {
 // ---------- File listing ----------
 
 async function showFiles(year, month, day) {
+  document.getElementById("yearJumpSelect").value = year;
+  updateYearNavigation();
   state.filesQuery = { year, month, day, q: "", sort: "size", order: "desc", page: 1, page_size: 100 };
   document.getElementById("fileFilter").value = "";
   document.getElementById("filesSection").classList.remove("hidden");
@@ -461,7 +480,10 @@ function filesTitleText() {
 }
 
 async function fetchFiles() {
-  const data = await API.files({ root: state.root, ...state.filesQuery });
+  const root = state.root;
+  const query = JSON.stringify(state.filesQuery);
+  const data = await API.files({ root, ...state.filesQuery });
+  if (root !== state.root || query !== JSON.stringify(state.filesQuery)) return;
   state.currentFiles = data.files || [];
   state.filesMeta = { total: data.total || 0, total_pages: data.total_pages || 1 };
   document.getElementById("filesTitle").textContent = `${filesTitleText()} (${state.filesMeta.total.toLocaleString()})`;
@@ -536,8 +558,83 @@ document.getElementById("nextPageBtn").addEventListener("click", () => {
 
 document.getElementById("yearJumpSelect").addEventListener("change", (e) => {
   const year = e.target.value;
+  updateYearNavigation();
   if (year) showFiles(year, null, null);
   else hideFiles();
+});
+
+document.getElementById("prevYearBtn").addEventListener("click", () => stepYear(-1));
+document.getElementById("nextYearBtn").addEventListener("click", () => stepYear(1));
+
+// ---------- HTML report export ----------
+
+const exportDialog = document.getElementById("exportDialog");
+let exportSelection = null;
+let exportInProgress = false;
+document.getElementById("exportBtn").addEventListener("click", () => {
+  if (!state.root || !state.filesQuery.year) return;
+  // Capture the selection when opening the dialog, including a just-typed filter.
+  clearTimeout(fileFilterDebounce);
+  state.filesQuery.q = document.getElementById("fileFilter").value.trim();
+  state.filesQuery.page = 1;
+  fetchFiles();
+  exportSelection = { root: state.root, ...state.filesQuery };
+  document.getElementById("exportScope").textContent =
+    filesTitleText() + (exportSelection.q ? " | Filter: " + exportSelection.q : "");
+  const sort = state.filesQuery.sort;
+  document.getElementById("exportOrder").value =
+    sort === "created_at" ? "date_" + state.filesQuery.order :
+    sort === "path" ? "tree" :
+    sort === "size" ? "size_" + state.filesQuery.order : "size_desc";
+  document.getElementById("exportError").classList.add("hidden");
+  document.getElementById("exportStatus").textContent = "";
+  exportDialog.showModal();
+});
+document.getElementById("exportCancelBtn").addEventListener("click", () => exportDialog.close());
+exportDialog.addEventListener("cancel", (event) => {
+  if (exportInProgress) event.preventDefault();
+});
+document.getElementById("exportDownloadBtn").addEventListener("click", async () => {
+  if (!exportSelection || exportInProgress) return;
+  const button = document.getElementById("exportDownloadBtn");
+  const cancel = document.getElementById("exportCancelBtn");
+  const order = document.getElementById("exportOrder");
+  const error = document.getElementById("exportError");
+  const status = document.getElementById("exportStatus");
+  exportInProgress = true;
+  button.disabled = cancel.disabled = order.disabled = true;
+  error.classList.add("hidden");
+  status.textContent = "Preparing report...";
+  try {
+    const params = new URLSearchParams();
+    for (const key of ["root", "year", "month", "day", "q"]) {
+      if (exportSelection[key]) params.set(key, exportSelection[key]);
+    }
+    params.set("organization", order.value);
+    const response = await fetch("/api/files/export?" + params);
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      throw new Error(data.error || "Could not generate the report.");
+    }
+    const url = URL.createObjectURL(await response.blob());
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "DiskUsePerDay-" +
+      [exportSelection.year, exportSelection.month, exportSelection.day].filter(Boolean).join("-") +
+      "-" + order.value + ".html";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+    exportDialog.close();
+  } catch (err) {
+    error.textContent = err.message || "Could not download the report.";
+    error.classList.remove("hidden");
+  } finally {
+    exportInProgress = false;
+    button.disabled = cancel.disabled = order.disabled = false;
+    status.textContent = "";
+  }
 });
 
 // ---------- Context menu (open file / open containing folder) ----------

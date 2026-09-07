@@ -206,3 +206,10 @@ td.path-cell { color: var(--text-muted); font-size: .82rem; overflow-wrap: anywh
 @media (max-width: 650px) {
   .year-usage-card > .section-heading { flex-wrap: wrap; }
 }
+
+.year-navigation { display: flex; align-items: center; gap: 10px; }
+.year-step { width: 44px; padding: 8px; font-size: 1.35rem; line-height: 1; }
+
+.file-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
+#exportScope { overflow-wrap: anywhere; }
+#exportDialog { max-height: 90vh; overflow-y: auto; }

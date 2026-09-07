@@ -3,9 +3,11 @@ import os
 import subprocess
 import sys
 
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, jsonify, request, send_from_directory, make_response, render_template
 
 import scanner
+from report import REPORT_ORDERS, directory_key, report_rows
+from datetime import datetime
 
 app = Flask(__name__, static_folder="static", static_url_path="")
 
@@ -113,6 +115,27 @@ SORT_COLUMNS = {"name": "name", "path": "path", "size": "size", "created_at": "c
 MAX_PAGE_SIZE = 100
 
 
+def file_filters(args):
+    """Shared filters for the paginated list and its complete export."""
+    root, year = args.get("root"), args.get("year")
+    month, day = args.get("month"), args.get("day")
+    query = (args.get("q") or "").strip()
+    conditions = ["root = ?", "substr(created_at,1,4) = ?"]
+    params = [root, year]
+    if month:
+        conditions.append("substr(created_at,6,2) = ?")
+        params.append(month)
+    if day:
+        conditions.append("created_at = ?")
+        params.append(f"{year}-{month}-{day}")
+    if query:
+        conditions.append("(name LIKE ? OR path LIKE ?)")
+        like = f"%{query}%"
+        params.extend([like, like])
+    return " AND ".join(conditions), params
+
+
+
 @app.route("/api/files")
 def files():
     root = request.args.get("root")
@@ -136,19 +159,7 @@ def files():
         page_size = MAX_PAGE_SIZE
     page_size = max(1, min(page_size, MAX_PAGE_SIZE))
 
-    conditions = ["root = ?", "substr(created_at,1,4) = ?"]
-    params = [root, year]
-    if month:
-        conditions.append("substr(created_at,6,2) = ?")
-        params.append(month)
-    if day:
-        conditions.append("created_at = ?")
-        params.append(f"{year}-{month}-{day}")
-    if query:
-        conditions.append("(name LIKE ? OR path LIKE ?)")
-        like = f"%{query}%"
-        params.extend([like, like])
-    where_clause = " AND ".join(conditions)
+    where_clause, params = file_filters(request.args)
 
     conn = scanner.get_db()
     total = conn.execute(f"SELECT COUNT(*) AS c FROM files WHERE {where_clause}", params).fetchone()["c"]
@@ -169,6 +180,38 @@ def files():
             "total_pages": max(1, -(-total // page_size)),
         }
     )
+
+
+@app.route("/api/files/export")
+def export_files():
+    if not request.args.get("root") or not request.args.get("year"):
+        return jsonify({"error": "root and year are required"}), 400
+    mode = request.args.get("organization", "size_desc")
+    if mode not in REPORT_ORDERS:
+        return jsonify({"error": "Unknown report organization"}), 400
+    where_clause, params = file_filters(request.args)
+    conn = scanner.get_db()
+    try:
+        conn.create_collation("DIRECTORY_TREE", lambda a, b:
+            (directory_key(a) > directory_key(b)) - (directory_key(a) < directory_key(b)))
+        rows = conn.execute(
+            f"SELECT path, name, size, created_at FROM files WHERE {where_clause} "
+            f"ORDER BY {REPORT_ORDERS[mode][1]}", params,
+        ).fetchall()
+    finally:
+        conn.close()
+    period = "-".join(request.args[key] for key in ("year", "month", "day") if request.args.get(key))
+    html = render_template(
+        "report.html", root=request.args["root"], period=period,
+        query=(request.args.get("q") or "").strip(), organization=REPORT_ORDERS[mode][0],
+        generated=datetime.now().astimezone().isoformat(timespec="seconds"),
+        count=len(rows), total_size=sum(row["size"] for row in rows),
+        rows=report_rows(rows, mode == "tree"),
+    )
+    response = make_response(html)
+    response.headers["Content-Disposition"] = 'attachment; filename="DiskUsePerDay-report.html"'
+    response.headers["Cache-Control"] = "no-store"
+    return response
 
 
 @app.route("/api/open", methods=["POST"])

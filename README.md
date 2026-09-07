@@ -19,6 +19,8 @@ Use **Settings** in the top bar to choose **Auto**, **Dark**, or **Light** appea
 
 The interface uses rounded clay-style surfaces in both themes. Below the chart, a responsive yearly overview lists storage in MB or GB across balanced columns. Select any year to view its files. The chart and yearly overview can be collapsed independently; their states are saved in browser storage and restored after reloads or restarts.
 
+Use **Export HTML** above the file list to download a standalone report of all files matching the selected period and search filter (all pages). Choose size ascending/descending, creation date oldest/newest first, or an alphabetical directory tree with nested folder headings. Reports include absolute paths, sizes, creation dates, and totals, and open offline.
+
 ## Requirements
 
 - Python 3.9+
@@ -65,6 +67,7 @@ diskuse.db          SQLite database created on first scan (git-ignored)
 | `GET /api/months?root=&year=` | Size/count per month |
 | `GET /api/days?root=&year=&month=` | Size/count per day |
 | `GET /api/files?root=&year=&month=&day=` | Paginated, sortable, searchable file list |
+| `GET /api/files/export` | Download a filtered HTML report with the selected organization |
 | `POST /api/open` | Open a scanned file or reveal its folder |
 
 ## Notes
