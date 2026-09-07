@@ -12,11 +12,14 @@ class ReportParser(HTMLParser):
     def __init__(self, html):
         super().__init__()
         self.paths = []
+        self.file_links = []
         self.in_path = False
         self.current = ""
         self.feed(html)
 
     def handle_starttag(self, tag, attrs):
+        if tag == "a" and dict(attrs).get("class") == "open-file":
+            self.file_links.append(dict(attrs))
         if tag == "td" and dict(attrs).get("class") == "path":
             self.in_path = True
             self.current = ""
@@ -120,6 +123,27 @@ class ReportTests(unittest.TestCase):
         self.assertNotIn("<script>", html)
         self.assertIn("&lt;script&gt;", html)
         self.assertEqual(ReportParser(html).paths, [path])
+
+    def test_encoded_file_links_for_local_and_network_paths(self):
+        cases = {
+            "C:\\My files\\za\u017c\u00f3\u0142\u0107 #50%.pdf": "file:///C:/My%20files/za%C5%BC%C3%B3%C5%82%C4%87%20%2350%25.pdf",
+            r"\\server\share\some folder\a#b.txt": "file://server/share/some%20folder/a%23b.txt",
+            '/tmp/a "quote" & #?.txt': "file:///tmp/a%20%22quote%22%20%26%20%23%3F.txt",
+        }
+        for path in cases:
+            self.insert(path)
+        for mode in ("tree", "size_asc", "date_desc"):
+            parsed = ReportParser(self.export(mode))
+            links = {path: link for path, link in zip(parsed.paths, parsed.file_links)}
+            for path, uri in cases.items():
+                self.assertEqual(links[path]["href"], uri)
+                self.assertEqual(links[path]["target"], "_blank")
+                self.assertEqual(links[path]["rel"], "noopener noreferrer")
+                self.assertNotIn("download", links[path])
+
+    def test_relative_path_has_no_open_link(self):
+        self.insert("relative.txt")
+        self.assertEqual(ReportParser(self.export()).file_links, [])
 
     def test_empty_and_invalid_requests(self):
         self.assertIn("No files match this selection.", self.export())

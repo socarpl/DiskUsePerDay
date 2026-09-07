@@ -17,6 +17,12 @@ th, td { padding: 10px 14px; text-align: left; border-bottom: 1px solid #e5e0ed;
 thead th { background: #e7e0f5; }
 .name { padding-left: calc(14px + var(--depth) * 16px); overflow-wrap: anywhere; min-width: 180px; }
 .path { overflow-wrap: anywhere; min-width: 220px; }
+.path-content { display: flex; align-items: flex-start; gap: 8px; }
+.path-text { min-width: 0; overflow-wrap: anywhere; }
+.open-file { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 26px; height: 26px; border-radius: 5px; color: #6346a0; }
+.open-file:hover { background: #e7e0f5; color: #302d45; }
+.open-file:focus-visible { outline: 2px solid #6346a0; outline-offset: 2px; }
+.open-file svg { width: 17px; height: 17px; }
 .number { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .date { white-space: nowrap; }
 .folder th { background: #eeebf5; color: #58417e; padding-left: calc(14px + var(--depth) * 16px); overflow-wrap: anywhere; }
@@ -36,6 +42,7 @@ footer { margin-top: 24px; color: #58536c; font-size: .8rem; } a { color: #6346a
 <span><strong>{{ "{:,.2f}".format(total_size / (1024 ** 3)) }} GB</strong> ({{ "{:,}".format(total_size) }} bytes)</span>
 </div>
 <p>All files matching the selected period and search filter, across all pages. Sizes and creation dates are from the saved scan.</p>
+<p class="meta">Use the arrow beside a path to open its file. Links point to the original files on this computer; browser settings and file types determine how they open.</p>
 <div class="table-wrap">
 <table>
 <thead><tr><th scope="col">Name / folder</th><th scope="col">Absolute path</th><th scope="col" class="number">Size (bytes)</th><th scope="col">Created</th></tr></thead>
@@ -44,7 +51,7 @@ footer { margin-top: 24px; color: #58536c; font-size: .8rem; } a { color: #6346a
 {% if row.kind == "folder" %}
 <tr class="folder" style="--depth: {{ row.depth }}"><th colspan="4">{{ row.name }}</th></tr>
 {% else %}
-<tr class="file" style="--depth: {{ row.depth }}"><td class="name">{{ row.file.name }}</td><td class="path">{{ row.file.path }}</td><td class="number">{{ "{:,}".format(row.file.size) }}</td><td class="date">{{ row.file.created_at }}</td></tr>
+<tr class="file" style="--depth: {{ row.depth }}"><td class="name">{{ row.file.name }}</td><td class="path"><div class="path-content"><span class="path-text">{{ row.file.path }}</span>{% if row.uri %}<a class="open-file" href="{{ row.uri }}" target="_blank" rel="noopener noreferrer" aria-label="Open {{ row.file.name }} in a new tab" title="Open file in a new tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M11 3H6a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3h12a3 3 0 0 0 3-3v-5M15 3h6v6M11 13 21 3"/></svg></a>{% endif %}</div></td><td class="number">{{ "{:,}".format(row.file.size) }}</td><td class="date">{{ row.file.created_at }}</td></tr>
 {% endif %}
 {% endfor %}
 {% if not count %}<tr><td colspan="4">No files match this selection.</td></tr>{% endif %}

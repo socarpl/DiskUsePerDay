@@ -10,9 +10,21 @@ REPORT_ORDERS = {
 }
 
 
-def path_parts(path):
+def report_path(path):
     cls = PureWindowsPath if "\\" in path or (len(path) > 1 and path[1] == ":") else PurePosixPath
-    return cls(path).parts
+    return cls(path)
+
+
+def path_parts(path):
+    return report_path(path).parts
+
+
+def file_uri(path):
+    """Encode spaces, Unicode, and URL delimiters without relying on the host OS."""
+    try:
+        return report_path(path).as_uri()
+    except ValueError:
+        return None
 
 
 def directory_key(path):
@@ -34,4 +46,4 @@ def report_rows(rows, tree):
             for depth in range(common, len(folders)):
                 yield {"kind": "folder", "name": folders[depth], "depth": min(depth, 12)}
             previous = folders
-        yield {"kind": "file", "file": row, "depth": min(len(parts) - 1, 12) if tree else 0}
+        yield {"kind": "file", "file": row, "uri": file_uri(row["path"]), "depth": min(len(parts) - 1, 12) if tree else 0}
